@@ -5,6 +5,7 @@ describe("markdownReport", () => {
   it("lists changed files and validation output", () => {
     const report = markdownReport({
       repositoryPath: "/work/sample",
+      baseRef: "main",
       changedFiles: [{ path: "src/index.ts", status: "modified" }],
       validationResults: [{ command: "npm test", status: "passed", stdout: "ok", stderr: "", exitCode: 0 }],
     });
@@ -17,6 +18,7 @@ describe("markdownReport", () => {
   it("keeps path and command markup on a single line as literal text", () => {
     const report = markdownReport({
       repositoryPath: "/work/[checkout](https://example.invalid)\n# fake title",
+      baseRef: "main",
       changedFiles: [
         { path: "[click](https://example.invalid).md", status: "added" },
         { path: "`quoted`\tname\n# fake heading", status: "modified" },
@@ -31,6 +33,10 @@ describe("markdownReport", () => {
 
     expect(report.split("\n")).toEqual([
       "# Review Report: `/work/[checkout](https://example.invalid)\\n# fake title`",
+      "",
+      "Compared the merge base with `main` to `HEAD`.",
+      "",
+      "2 committed files changed. Validation: 1 passed, 0 failed.",
       "",
       "## Changed files",
       "- `[click](https://example.invalid).md` (added)",
@@ -50,6 +56,7 @@ describe("markdownReport", () => {
     const error = "````\n<details>";
     const report = markdownReport({
       repositoryPath: ".",
+      baseRef: "main",
       changedFiles: [],
       validationResults: [
         { command: "first", status: "failed", stdout, stderr, error },

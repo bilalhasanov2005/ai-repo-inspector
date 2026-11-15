@@ -34,9 +34,11 @@ describe("inspector review CLI", () => {
   }
 
   it("preserves a repository path with spaces and accepts Markdown format", () => {
-    const result = review("--repo", repository, "--base-ref", "main", "--format", "markdown");
+    const result = review("--repo", repository, "--base-ref", "HEAD", "--format", "markdown");
     expect(result.status, result.stderr).toBe(0);
-    expect(readFileSync(join(repository, "review-report.md"), "utf8")).toContain(`# Review Report: \`${repository}\``);
+    const report = readFileSync(join(repository, "review-report.md"), "utf8");
+    expect(report).toContain(`# Review Report: \`${repository}\``);
+    expect(report).toContain("Compared the merge base with `HEAD` to `HEAD`.");
   });
 
   it.each([
@@ -73,6 +75,7 @@ describe("inspector review CLI", () => {
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("Review report written to review-report.md");
     const report = readFileSync(join(repository, "review-report.md"), "utf8");
+    expect(report).toContain("Validation: 1 passed, 1 failed.");
     expect(report).toContain("**failed** (exit code 7)");
     expect(report).toContain("first stdout");
     expect(report).toContain("first stderr");
@@ -97,6 +100,7 @@ describe("inspector review CLI", () => {
     const result = review("--repo", ".", "--stdout");
     expect(result.status, result.stderr).toBe(0);
     expect(result.stderr.trim()).toBe("Review report sent to standard output.");
+    expect(result.stdout).toContain("0 committed files changed. No validation commands were run.");
     expect(existsSync(reportPath)).toBe(false);
 
     expect(review("--repo", ".").status).toBe(0);

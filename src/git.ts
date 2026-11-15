@@ -1,6 +1,8 @@
 import { execFileSync } from "node:child_process";
 import type { ChangedFile } from "./types.js";
 
+export const DEFAULT_BASE_REF = "main";
+
 function git(repositoryPath: string, args: string[]): string {
   return execFileSync("git", args, {
     cwd: repositoryPath,
@@ -21,8 +23,8 @@ function resolveBaseCommit(repositoryPath: string, baseRef: string): string {
   }
 }
 
-export function changedFiles(repositoryPath: string, baseRef?: string): ChangedFile[] {
-  const baseCommit = resolveBaseCommit(repositoryPath, baseRef ?? "main");
+export function changedFiles(repositoryPath: string, baseRef = DEFAULT_BASE_REF): ChangedFile[] {
+  const baseCommit = resolveBaseCommit(repositoryPath, baseRef);
   const output = git(repositoryPath, ["diff", "--name-status", `${baseCommit}...HEAD`, "--"]);
 
   return output

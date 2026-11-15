@@ -2,6 +2,7 @@ import type { ChangedFile, ValidationResult } from "./types.js";
 
 type ReportInput = {
   repositoryPath: string;
+  baseRef: string;
   changedFiles: ChangedFile[];
   validationResults: ValidationResult[];
 };
@@ -30,7 +31,23 @@ function codeBlock(text: string): string {
 }
 
 export function markdownReport(input: ReportInput): string {
-  const lines = [`# Review Report: ${inlineCode(input.repositoryPath)}`, "", "## Changed files"];
+  const fileCount = input.changedFiles.length;
+  const files = fileCount === 1 ? "file" : "files";
+  const checkCount = input.validationResults.length;
+  const failures = input.validationResults.filter((result) => result.status === "failed").length;
+  const validationSummary = checkCount === 0
+    ? "No validation commands were run."
+    : `Validation: ${checkCount - failures} passed, ${failures} failed.`;
+
+  const lines = [
+    `# Review Report: ${inlineCode(input.repositoryPath)}`,
+    "",
+    `Compared the merge base with ${inlineCode(input.baseRef)} to ${inlineCode("HEAD")}.`,
+    "",
+    `${fileCount} committed ${files} changed. ${validationSummary}`,
+    "",
+    "## Changed files",
+  ];
   for (const file of input.changedFiles) {
     lines.push(`- ${inlineCode(file.path)} (${file.status})`);
   }
