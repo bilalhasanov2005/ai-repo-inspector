@@ -91,4 +91,30 @@ describe("inspector review CLI", () => {
     expect(report).toContain("check stdout");
     expect(report).toContain("check stderr");
   });
+
+  it("prints the report to stdout and confirmation to stderr", () => {
+    const reportPath = join(repository, "review-report.md");
+    const result = review("--repo", ".", "--stdout");
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr.trim()).toBe("Review report sent to standard output.");
+    expect(existsSync(reportPath)).toBe(false);
+
+    expect(review("--repo", ".").status).toBe(0);
+    expect(result.stdout).toBe(`${readFileSync(reportPath, "utf8")}\n`);
+  });
+
+  it("prints the report to stdout and the failure notice to stderr", () => {
+    const command = `"${process.execPath}" -e "process.exitCode = 7"`;
+    const result = review("--repo", ".", "--stdout", "--validate", command);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/^# Review Report:/);
+    expect(result.stdout).toContain("**failed** (exit code 7)");
+    expect(result.stdout).not.toContain("One or more validation commands failed.");
+    expect(result.stderr.trim().split(/\r?\n/)).toEqual([
+      "Review report sent to standard output.",
+      "One or more validation commands failed.",
+    ]);
+    expect(existsSync(join(repository, "review-report.md"))).toBe(false);
+  });
 });
