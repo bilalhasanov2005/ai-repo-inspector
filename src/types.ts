@@ -6,7 +6,10 @@ export type ChangedFile = {
 export type ValidationResult = {
   command: string;
   status: "passed" | "failed";
-  output: string;
+  stdout: string;
+  stderr: string;
+  exitCode?: number;
+  error?: string;
 };
 
 export type ReviewRequest = {

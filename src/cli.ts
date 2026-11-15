@@ -35,7 +35,7 @@ async function main() {
     return;
   }
 
-  const report = await reviewRepository({
+  const { report, validationResults } = await reviewRepository({
     repositoryPath: args.repositoryPath,
     baseRef: args.baseRef,
     validationCommands: args.validations,
@@ -43,6 +43,10 @@ async function main() {
   });
   writeFileSync("review-report.md", report, "utf8");
   console.log("Review report written to review-report.md");
+  if (validationResults.some((result) => result.status === "failed")) {
+    console.error("One or more validation commands failed.");
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

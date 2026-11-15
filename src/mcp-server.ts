@@ -47,7 +47,7 @@ server.registerTool(
     }).strict(),
   },
   async ({ repo_path, baseRef }) => {
-    const report = await reviewRepository({
+    const { report } = await reviewRepository({
       repositoryPath: resolveRepositoryPath(repo_path),
       baseRef,
     });

@@ -2,13 +2,22 @@ import { exec } from "node:child_process";
 import type { ValidationResult } from "./types.js";
 
 export function runValidation(command: string, cwd: string): Promise<ValidationResult> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     exec(command, { cwd }, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
+      const result = { command, stdout, stderr };
+      if (!error) {
+        resolve({ ...result, status: "passed", exitCode: 0 });
         return;
       }
-      resolve({ command, status: "passed", output: stdout || stderr });
+      if (typeof error.code === "number") {
+        resolve({ ...result, status: "failed", exitCode: error.code });
+        return;
+      }
+      resolve({
+        ...result,
+        status: "failed",
+        error: error.signal ? `Terminated by ${error.signal}.` : error.message,
+      });
     });
   });
 }
