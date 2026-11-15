@@ -47,24 +47,54 @@ npm test
 
 ## CLI
 
+From this checkout, use `.` to review the current repository. To review another
+checkout, replace `.` with its path and quote paths that contain spaces.
+
 ```bash
-npm run inspector -- review --repo ./path/to/repo --format markdown
-npm run inspector -- review --repo ./path/to/repo --validate "npm test"
+npm run inspector -- review --repo . --format markdown
+npm run inspector -- review --repo . --validate "npm test"
 ```
 
-The report is written to `review-report.md`.
+The report starts with the comparison range, the number of committed files
+changed, and a count of passed and failed validations when checks ran. By
+default, it compares the merge base with `main` to `HEAD`, so reviewing
+`main` from `main` reports zero changed files. Use `--base-ref <ref>` to
+choose a different base. For example, `--base-ref HEAD~1` reviews the changes
+since the previous commit.
+
+The CLI writes `review-report.md` in the current directory. It runs each
+explicit `--validate` command in the selected checkout. If any check fails,
+the CLI still produces the report and exits with status 1.
+
+Use `--stdout` to print the Markdown or redirect it to a file. The
+`--silent` npm flag suppresses its script banner. The inspector sends its
+confirmation to stderr, so the redirected file contains only Markdown.
+
+```bash
+npm run --silent inspector -- review --repo . --stdout > my-review.md
+```
 
 ## MCP
 
-Start the stdio server with:
+Build the server, then configure your MCP client to launch the built JavaScript
+with Node:
 
 ```bash
-npm run mcp-server
+npm run build
+node dist/src/mcp-server.js
 ```
 
-It exposes a `review_repository` tool. Inspect the implementation to determine
-its current input contract and whether it is suitable for the production model
-you propose.
+Use an absolute path to `dist/src/mcp-server.js` if your client starts it from
+another directory. The server uses its working directory as the workspace
+root by default. Set `INSPECTOR_WORKSPACE_ROOT` in the server's environment
+to select a workspace explicitly.
+
+Call `review_repository` with `{"repo_path":"."}` to review the workspace
+root. `repo_path` can be an absolute path or a path relative to the
+configured workspace. The checkout must resolve inside that workspace.
+You can also pass an optional `baseRef`. The tool returns the same Markdown
+comparison summary and committed file list as the CLI. Run validation commands
+through the CLI.
 
 ## Project layout
 
