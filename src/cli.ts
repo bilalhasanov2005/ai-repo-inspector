@@ -1,46 +1,54 @@
 #!/usr/bin/env node
 import { writeFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 import { reviewRepository } from "./core.js";
+import type { ReviewRequest } from "./types.js";
 
-type Args = {
-  command: string;
-  repositoryPath?: string;
-  baseRef?: string;
-  format?: "markdown" | "json";
-  validations: string[];
-};
+const usage = "Usage: inspector review --repo <path> [--base-ref <ref>] [--format markdown] [--validate <command>]...";
 
-function parseArgs(argv: string[]): Args {
-  const args: Args = { command: argv[0] ?? "", validations: [] };
-  for (let index = 1; index < argv.length; index++) {
-    const token = argv[index];
-    if (token === "--repo") {
-      args.repositoryPath = argv[++index]?.split(" ")[0];
-    } else if (token === "--base-ref") {
-      args.baseRef = argv[++index];
-    } else if (token === "--format") {
-      args.format = argv[++index] as Args["format"];
-    } else if (token === "--validate") {
-      args.validations.push(argv[++index]);
-    }
+function parseReviewArgs(argv: string[]): ReviewRequest {
+  const [command, ...args] = argv;
+  if (command === undefined) throw new Error("Missing command. Expected review.");
+  if (command !== "review") throw new Error(`Unknown command ${JSON.stringify(command)}. Expected review.`);
+
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: "string" },
+      "base-ref": { type: "string" },
+      format: { type: "string" },
+      validate: { type: "string", multiple: true },
+    },
+  });
+
+  if (!values.repo) throw new Error("Missing required option --repo <path>.");
+  if (values["base-ref"] === "") throw new Error("--base-ref requires a nonempty value.");
+  if (values.format !== undefined && values.format !== "markdown") {
+    throw new Error(`Unsupported format ${JSON.stringify(values.format)}. Use markdown.`);
   }
-  return args;
+  if (values.validate?.some((command) => command.trim() === "")) {
+    throw new Error("--validate requires a nonempty command.");
+  }
+
+  return {
+    repositoryPath: values.repo,
+    baseRef: values["base-ref"],
+    validationCommands: values.validate,
+  };
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.command !== "review" || !args.repositoryPath) {
-    console.error("Usage: inspector review --repo <path> [--base-ref <ref>] [--validate <command>]");
+  let request: ReviewRequest;
+  try {
+    request = parseReviewArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    console.error(usage);
     process.exitCode = 1;
     return;
   }
 
-  const { report, validationResults } = await reviewRepository({
-    repositoryPath: args.repositoryPath,
-    baseRef: args.baseRef,
-    validationCommands: args.validations,
-    format: args.format,
-  });
+  const { report, validationResults } = await reviewRepository(request);
   writeFileSync("review-report.md", report, "utf8");
   console.log("Review report written to review-report.md");
   if (validationResults.some((result) => result.status === "failed")) {
