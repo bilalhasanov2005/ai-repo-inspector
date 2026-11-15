@@ -65,7 +65,7 @@ describe("review_repository over stdio", () => {
     expect(result.isError).toBeFalsy();
     expect(result.content).toEqual([{
       type: "text",
-      text: expect.stringContaining("fixture-change.txt (added)"),
+      text: expect.stringContaining("`fixture-change.txt` (added)"),
     }]);
   });
 

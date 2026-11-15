@@ -36,7 +36,7 @@ describe("inspector review CLI", () => {
   it("preserves a repository path with spaces and accepts Markdown format", () => {
     const result = review("--repo", repository, "--base-ref", "main", "--format", "markdown");
     expect(result.status, result.stderr).toBe(0);
-    expect(readFileSync(join(repository, "review-report.md"), "utf8")).toContain(`# Review Report: ${repository}`);
+    expect(readFileSync(join(repository, "review-report.md"), "utf8")).toContain(`# Review Report: \`${repository}\``);
   });
 
   it.each([
